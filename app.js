@@ -113,8 +113,7 @@ function updateNextPrayer(prayerTimes) {
                       (now.getMonth() + 1).toString().padStart(2, "0") + "." +
                       now.getFullYear();
     let currentTime = now.getHours().toString().padStart(2, "0") + ":" +
-                      now.getMinutes().toString().padStart(2, "0") + ":" +
-                      now.getSeconds().toString().padStart(2, "0");
+                      now.getMinutes().toString().padStart(2, "0"); // KEINE Sekunden!
 
     let todayPrayer = prayerTimes.find(row => row.Datum === currentDate);
     
@@ -126,7 +125,7 @@ function updateNextPrayer(prayerTimes) {
 
     // Nächstes Gebet finden
     for (let prayer of prayerNames) {
-        let prayerTime = todayPrayer[prayer] + ":00"; // Sekunden hinzufügen für exakten Vergleich
+        let prayerTime = todayPrayer[prayer]; // Nur HH:MM ohne Sekunden
         if (prayerTime > currentTime) {
             nextPrayer = prayer;
             nextPrayerTime = prayerTime;
@@ -145,22 +144,26 @@ function updateNextPrayer(prayerTimes) {
         
         if (tomorrowPrayer) {
             nextPrayer = "Fajr";
-            nextPrayerTime = tomorrowPrayer["Fajr"] + ":00"; // Morgen-Fajr als nächstes Gebet nehmen
+            nextPrayerTime = tomorrowPrayer["Fajr"];
         }
     }
 
     if (nextPrayer && nextPrayerTime) {
-        // Zeitdifferenz berechnen
-        let nowMs = now.getTime();
-        let nextPrayerMs = new Date(now.toDateString() + " " + nextPrayerTime).getTime();
-        if (nextPrayerMs < nowMs) nextPrayerMs += 24 * 60 * 60 * 1000; // Falls nächstes Gebet am nächsten Tag ist
+        // Zeitdifferenz berechnen (in Minuten)
+        let [nextHours, nextMinutes] = nextPrayerTime.split(":").map(Number);
+        let nextPrayerDate = new Date();
+        nextPrayerDate.setHours(nextHours, nextMinutes, 0, 0); // Sekunden und Millisekunden auf 0 setzen
 
-        let diffMs = nextPrayerMs - nowMs;
+        if (nextPrayerDate < now) {
+            nextPrayerDate.setDate(nextPrayerDate.getDate() + 1); // Falls es morgen ist
+        }
+
+        let diffMs = nextPrayerDate - now;
         let hours = Math.floor(diffMs / (1000 * 60 * 60));
         let minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
         let seconds = Math.floor((diffMs % (1000 * 60)) / 1000);
 
-        // HTML aktualisieren
+        
         document.getElementById("currentTime").textContent = `Aktuelle Zeit: ${currentTime}`;
         document.getElementById("nextPrayer").textContent = `Nächstes Gebet: ${nextPrayer} um ${nextPrayerTime}`;
         document.getElementById("remainingTime").textContent = `Verbleibende Zeit: ${hours}:${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
