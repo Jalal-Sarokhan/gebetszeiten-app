@@ -109,15 +109,12 @@ updateTime();
 
 function updateNextPrayer(prayerTimes) {
     let now = new Date();
-    let currentDate = now.getDate().toString().padStart(2, "0") + "." +
-                      (now.getMonth() + 1).toString().padStart(2, "0") + "." +
-                      now.getFullYear();
-    let currentTime = now.getHours().toString().padStart(2, "0") + ":" +
-                      now.getMinutes().toString().padStart(2, "0"); // KEINE Sekunden!
+    let currentDate = now.toLocaleDateString("de-DE"); // Format: "01.03.2025"
+    let currentTime = now.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" });
 
     let todayPrayer = prayerTimes.find(row => row.Datum === currentDate);
     
-    if (!todayPrayer) return; // Falls keine Gebetszeiten gefunden wurden, abbrechen
+    if (!todayPrayer) return; 
 
     let prayerNames = ["Fajr", "Zuhr", "Asr", "Maghrib", "Isha"];
     let nextPrayer = null;
@@ -137,9 +134,7 @@ function updateNextPrayer(prayerTimes) {
     if (!nextPrayer) {
         let tomorrow = new Date();
         tomorrow.setDate(tomorrow.getDate() + 1);
-        let tomorrowDate = tomorrow.getDate().toString().padStart(2, "0") + "." +
-                           (tomorrow.getMonth() + 1).toString().padStart(2, "0") + "." +
-                           tomorrow.getFullYear();
+        let tomorrowDate = tomorrow.toLocaleDateString("de-DE"); // Format: "01.03.2025"
         let tomorrowPrayer = prayerTimes.find(row => row.Datum === tomorrowDate);
         
         if (tomorrowPrayer) {
