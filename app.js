@@ -35,7 +35,7 @@ function checkPrayerTimes(prayerTimes) {
         let currentTime = now.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" });
 
         let todayPrayer = prayerTimes.find(row => row.Datum === currentDate);
-        console.log("test: ", todayPrayer, "current: ", currentTime, "prayerTimes", prayerTimes);
+        console.log("test: ", todayPrayer, "currentDate: ", currentDate, "current: ", currentTime, "prayerTimes", prayerTimes);
         if (todayPrayer) {
             ["Fajr", "Zuhr", "Asr", "Maghrib", "Isha"].forEach(prayer => {
                 if (todayPrayer[prayer] === currentTime) {
