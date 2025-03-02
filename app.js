@@ -37,9 +37,10 @@ function checkPrayerTimes(prayerTimes) {
         let todayPrayer = prayerTimes.find(row => row.Datum === currentDate);
         if (todayPrayer) {
             ["Fajr", "Zuhr", "Asr", "Maghrib", "Isha"].forEach(prayer => {
-                console.log("todayPrayer[prayer]: ",  todayPrayer[prayer], "currentTime", currentTime, todayPrayer[prayer] === currentTime);
+                
                 if (todayPrayer[prayer] === currentTime) {
-                    playTest(prayer);
+                    console.log("todayPrayer[prayer]: ",  todayPrayer[prayer], "currentTime", currentTime, todayPrayer[prayer] === currentTime);
+                    playAzan(prayer);
                 }
             });
         }
@@ -76,21 +77,30 @@ function playTest(prayer) {
     console.log("azan soll abgespielt", azan);
     
 }
+// Azan für eine Webseite aktivieren
 document.addEventListener("DOMContentLoaded", function () {
     let enableAudioButton = document.getElementById("enableAudio");
-    
+
     enableAudioButton.addEventListener("click", () => {
         let azan = new Audio("azan.mp3");
         azan.play().then(() => {
-            console.log("Audio-Funktion aktiviert.");
+            console.log("Audio spielt für 3 Sekunden...");
+
+            // Nach 3 Sekunden stoppen
+            setTimeout(() => {
+                azan.pause();
+                azan.currentTime = 0; // Zurück zum Anfang setzen
+                console.log("Audio gestoppt.");
+            }, 3000);
+
         }).catch(error => {
             console.error("Fehler beim Abspielen des Audios:", error);
         });
     });
 
-    // Button sichtbar machen, damit Nutzer klicken kann
     enableAudioButton.style.display = "block";
 });
+
 
 
 
