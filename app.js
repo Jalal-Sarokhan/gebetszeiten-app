@@ -44,7 +44,7 @@ function checkPrayerTimes(prayerTimes) {
                 }
             });
         }
-    }, 30000);
+    }, 60000);
 }
 
 
