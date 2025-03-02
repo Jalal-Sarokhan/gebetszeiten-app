@@ -23,6 +23,8 @@ document.addEventListener("DOMContentLoaded", function () {
                         tableBody.appendChild(tr);
                     });
                     checkPrayerTimes(results.data);
+                    updateNextPrayer(results.data);
+                    setInterval(() => updateNextPrayer(results.data), 1000);
                 }
             });
         });
@@ -70,13 +72,6 @@ function playAzan(prayer) {
     }, 60000);
 }
 
-function playTest(prayer) {
-    alert(`Es ist Zeit für ${prayer}!`);
-    let azan = new Audio("azan.mp3");
-    azan.play();
-    console.log("azan soll abgespielt", azan);
-    
-}
 // Azan für eine Webseite aktivieren
 document.addEventListener("DOMContentLoaded", function () {
     let enableAudioButton = document.getElementById("enableAudio");
@@ -112,3 +107,62 @@ function updateTime() {
 setInterval(updateTime, 1000);
 updateTime(); 
 
+function updateNextPrayer(prayerTimes) {
+    let now = new Date();
+    let currentDate = now.getDate().toString().padStart(2, "0") + "." +
+                      (now.getMonth() + 1).toString().padStart(2, "0") + "." +
+                      now.getFullYear();
+    let currentTime = now.getHours().toString().padStart(2, "0") + ":" +
+                      now.getMinutes().toString().padStart(2, "0") + ":" +
+                      now.getSeconds().toString().padStart(2, "0");
+
+    let todayPrayer = prayerTimes.find(row => row.Datum === currentDate);
+    
+    if (!todayPrayer) return; // Falls keine Gebetszeiten gefunden wurden, abbrechen
+
+    let prayerNames = ["Fajr", "Zuhr", "Asr", "Maghrib", "Isha"];
+    let nextPrayer = null;
+    let nextPrayerTime = null;
+
+    // Nächstes Gebet finden
+    for (let prayer of prayerNames) {
+        let prayerTime = todayPrayer[prayer] + ":00"; // Sekunden hinzufügen für exakten Vergleich
+        if (prayerTime > currentTime) {
+            nextPrayer = prayer;
+            nextPrayerTime = prayerTime;
+            break; // Erstes zukünftiges Gebet gefunden -> Schleife beenden
+        }
+    }
+
+    // Falls kein weiteres Gebet am heutigen Tag -> erstes Gebet von morgen nehmen
+    if (!nextPrayer) {
+        let tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        let tomorrowDate = tomorrow.getDate().toString().padStart(2, "0") + "." +
+                           (tomorrow.getMonth() + 1).toString().padStart(2, "0") + "." +
+                           tomorrow.getFullYear();
+        let tomorrowPrayer = prayerTimes.find(row => row.Datum === tomorrowDate);
+        
+        if (tomorrowPrayer) {
+            nextPrayer = "Fajr";
+            nextPrayerTime = tomorrowPrayer["Fajr"] + ":00"; // Morgen-Fajr als nächstes Gebet nehmen
+        }
+    }
+
+    if (nextPrayer && nextPrayerTime) {
+        // Zeitdifferenz berechnen
+        let nowMs = now.getTime();
+        let nextPrayerMs = new Date(now.toDateString() + " " + nextPrayerTime).getTime();
+        if (nextPrayerMs < nowMs) nextPrayerMs += 24 * 60 * 60 * 1000; // Falls nächstes Gebet am nächsten Tag ist
+
+        let diffMs = nextPrayerMs - nowMs;
+        let hours = Math.floor(diffMs / (1000 * 60 * 60));
+        let minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+        let seconds = Math.floor((diffMs % (1000 * 60)) / 1000);
+
+        // HTML aktualisieren
+        document.getElementById("currentTime").textContent = `Aktuelle Zeit: ${currentTime}`;
+        document.getElementById("nextPrayer").textContent = `Nächstes Gebet: ${nextPrayer} um ${nextPrayerTime}`;
+        document.getElementById("remainingTime").textContent = `Verbleibende Zeit: ${hours}:${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
+    }
+}
