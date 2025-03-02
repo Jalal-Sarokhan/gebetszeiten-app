@@ -97,13 +97,6 @@ document.addEventListener("DOMContentLoaded", function () {
 });
 
 
-if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('/sw.js')
-    .then(reg => console.log("Service Worker registriert:", reg))
-    .catch(err => console.log("Service Worker Fehler:", err));
-}
-
-
 function updateTime() {
     let now = new Date();
     let timeString = now.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
