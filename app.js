@@ -72,8 +72,15 @@ function playAzan(prayer) {
 function playTest(prayer) {
     alert(`Es ist Zeit für ${prayer}!`);
     let azan = new Audio("azan.mp3");
-    azan.play();
-    console.log("azan soll abgespielt", azan);
+    // azan.play();
+    azan.muted = true;
+    azan.play().then(() => {
+        azan.muted = false; // Jetzt erst Ton aktivieren
+        console.log("Audio aktiviert.");
+    }).catch(error => {
+        console.error("Autoplay-Fehler:", error);
+    });
+    
     
 }
 
