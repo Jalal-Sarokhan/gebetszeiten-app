@@ -59,6 +59,8 @@ function playAzan(prayer) {
 
     // Azan abspielen
     let azan = new Audio("azan.mp3");
+    azan.play().catch(error => console.log("Audio-Fehler:", error));
+
     azan.play().catch(error => {
         console.log("Audio konnte nicht abgespielt werden:", error);
     });
@@ -67,6 +69,9 @@ function playAzan(prayer) {
     }, 60000);
 }
 
+function playTest(prayer) {
+    alert(`Es ist Zeit für ${prayer}!`);
+}
 
 
 
