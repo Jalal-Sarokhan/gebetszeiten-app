@@ -38,7 +38,8 @@ function checkPrayerTimes(prayerTimes) {
         if (todayPrayer) {
             ["Fajr", "Zuhr", "Asr", "Maghrib", "Isha"].forEach(prayer => {
                 if (todayPrayer[prayer] === currentTime) {
-                    playAzan(prayer);
+                    console.log("test: ", todayPrayer[prayer]);
+                    playTest(prayer);
                 }
             });
         }
