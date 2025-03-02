@@ -37,7 +37,7 @@ function checkPrayerTimes(prayerTimes) {
         let todayPrayer = prayerTimes.find(row => row.Datum === currentDate);
         if (todayPrayer) {
             ["Fajr", "Zuhr", "Asr", "Maghrib", "Isha"].forEach(prayer => {
-                console.log("todayPrayer[prayer]: ",  todayPrayer[prayer], "currentTime", currentTime, !!todayPrayer[prayer] === currentTime);
+                console.log("todayPrayer[prayer]: ",  todayPrayer[prayer], "currentTime", currentTime, todayPrayer[prayer] === currentTime);
                 if (todayPrayer[prayer] === currentTime) {
                     playTest(prayer);
                 }
@@ -73,6 +73,8 @@ function playTest(prayer) {
     alert(`Es ist Zeit für ${prayer}!`);
     let azan = new Audio("azan.mp3");
     azan.play();
+    console.log("azan soll abgespielt", azan);
+    
 }
 
 
