@@ -97,6 +97,11 @@ document.addEventListener("DOMContentLoaded", function () {
 });
 
 
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js')
+    .then(reg => console.log("Service Worker registriert:", reg))
+    .catch(err => console.log("Service Worker Fehler:", err));
+}
 
 
 function updateTime() {
