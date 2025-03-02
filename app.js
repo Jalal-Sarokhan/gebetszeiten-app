@@ -76,30 +76,25 @@ function playAzan(prayer) {
 document.addEventListener("DOMContentLoaded", function () {
     let enableAudioButton = document.getElementById("enableAudio");
 
-    // Event Listener für das Ändern des Status des Checkboxes
-    enableAudioButton.addEventListener("change", () => {
-        if (enableAudioButton.checked) {
-            let azan = new Audio("azan.mp3");
-            azan.play().then(() => {
-                console.log("Audio spielt für 3 Sekunden...");
+    enableAudioButton.addEventListener("click", () => {
+        let azan = new Audio("azan.mp3");
+        azan.play().then(() => {
+            console.log("Audio spielt für 3 Sekunden...");
 
-                // Nach 3 Sekunden stoppen
-                setTimeout(() => {
-                    azan.pause();
-                    azan.currentTime = 0; // Zurück zum Anfang setzen
-                    console.log("Audio gestoppt.");
-                }, 3000);
-            }).catch(error => {
-                console.error("Fehler beim Abspielen des Audios:", error);
-            });
-        } else {
-            console.log("Audio gestoppt, da der Schalter deaktiviert wurde.");
-        }
+            // Nach 3 Sekunden stoppen
+            setTimeout(() => {
+                azan.pause();
+                azan.currentTime = 0; // Zurück zum Anfang setzen
+                console.log("Audio gestoppt.");
+            }, 3000);
+
+        }).catch(error => {
+            console.error("Fehler beim Abspielen des Audios:", error);
+        });
     });
 
-    enableAudioButton.style.display = "block";  // Sichtbar machen des Schalters
+    enableAudioButton.style.display = "block";
 });
-
 
 
 function updateTime() {
