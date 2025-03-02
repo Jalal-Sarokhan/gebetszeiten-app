@@ -49,6 +49,10 @@ function checkPrayerTimes(prayerTimes) {
     }, 60000);
 }
 
+function testAzan() {
+    let azan = new Audio("azan.mp3");
+    azan.play();
+}
 
 function playAzan(prayer) {
     if (Notification.permission === "granted") {
