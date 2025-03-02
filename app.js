@@ -72,17 +72,25 @@ function playAzan(prayer) {
 function playTest(prayer) {
     alert(`Es ist Zeit für ${prayer}!`);
     let azan = new Audio("azan.mp3");
-    // azan.play();
-    azan.muted = true;
-    azan.play().then(() => {
-        azan.muted = false; // Jetzt erst Ton aktivieren
-        console.log("Audio aktiviert.");
-    }).catch(error => {
-        console.error("Autoplay-Fehler:", error);
-    });
-    
+    azan.play();
+    console.log("azan soll abgespielt", azan);
     
 }
+document.addEventListener("DOMContentLoaded", function () {
+    let enableAudioButton = document.getElementById("enableAudio");
+    
+    enableAudioButton.addEventListener("click", () => {
+        let azan = new Audio("azan.mp3");
+        azan.play().then(() => {
+            console.log("Audio-Funktion aktiviert.");
+        }).catch(error => {
+            console.error("Fehler beim Abspielen des Audios:", error);
+        });
+    });
+
+    // Button sichtbar machen, damit Nutzer klicken kann
+    enableAudioButton.style.display = "block";
+});
 
 
 
