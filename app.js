@@ -1,3 +1,9 @@
+if ('Notification' in window) {
+    Notification.requestPermission().then(permission => {
+        console.log("Benachrichtigungen:", permission);
+    });
+}
+
 document.addEventListener("DOMContentLoaded", function () {
     fetch("gebetszeiten_2025.csv") // CSV laden
         .then(response => response.text())
@@ -25,21 +31,40 @@ document.addEventListener("DOMContentLoaded", function () {
 function checkPrayerTimes(prayerTimes) {
     setInterval(() => {
         let now = new Date();
-        let currentTime = now.getHours() + ":" + now.getMinutes();
-        let today = now.toISOString().split("T")[0];
+        let currentDate = now.toLocaleDateString("de-DE"); // Format: "01.03.2025"
+        let currentTime = now.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" });
 
-        let todayPrayer = prayerTimes.find(row => row.Datum === today);
+        let todayPrayer = prayerTimes.find(row => row.Datum === currentDate);
         if (todayPrayer) {
-            Object.keys(todayPrayer).forEach(key => {
-                if (todayPrayer[key] === currentTime) {
-                    playAzan();
+            ["Fajr", "Zuhr", "Asr", "Maghrib", "Isha"].forEach(prayer => {
+                if (todayPrayer[prayer] === currentTime) {
+                    playAzan(prayer);
                 }
             });
         }
-    }, 60000); // Alle 60 Sekunden prüfen
+    }, 60000);
 }
 
-function playAzan() {
+
+function playAzan(prayer) {
+    if (Notification.permission === "granted") {
+        new Notification(`Gebetszeit`, { body: `Es ist Zeit für ${prayer}!`, icon: "icon.png" });
+    }
+    document.getElementById("prayer-notification").textContent = `Es ist Zeit für ${prayer}!`;
     let azan = new Audio("azan.mp3");
     azan.play();
+    azan.onended = () => {
+        document.getElementById("prayer-notification").textContent = "";
+    };
 }
+
+
+
+function updateTime() {
+    let now = new Date();
+    let timeString = now.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+    document.getElementById("current-time").textContent = `Aktuelle Zeit: ${timeString}`;
+}
+setInterval(updateTime, 1000);
+updateTime(); 
+
