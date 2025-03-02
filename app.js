@@ -48,15 +48,25 @@ function checkPrayerTimes(prayerTimes) {
 
 function playAzan(prayer) {
     if (Notification.permission === "granted") {
-        new Notification(`Gebetszeit`, { body: `Es ist Zeit für ${prayer}!`, icon: "icon.png" });
+        new Notification("Gebetszeit", {
+            body: `Es ist Zeit für ${prayer}!`,
+            icon: "azan.png"
+        });
+    } else {
+        alert(`Es ist Zeit für ${prayer}!`);
     }
     document.getElementById("prayer-notification").textContent = `Es ist Zeit für ${prayer}!`;
+
+    // Azan abspielen
     let azan = new Audio("azan.mp3");
-    azan.play();
-    azan.onended = () => {
+    azan.play().catch(error => {
+        console.log("Audio konnte nicht abgespielt werden:", error);
+    });
+    setTimeout(() => {
         document.getElementById("prayer-notification").textContent = "";
-    };
+    }, 60000);
 }
+
 
 
 
