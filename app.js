@@ -55,7 +55,6 @@ function testAzan() {
 }
 
 function playAzan(prayer) {
-    window.alert("Azan für ", prayer, " ist jetzt an!");
     if (Notification.permission === "granted") {
         new Notification("Gebetszeit", {
             body: `Es ist Zeit für ${prayer}!`,
