@@ -29,7 +29,7 @@ document.addEventListener("DOMContentLoaded", function () {
 });
 
 function checkPrayerTimes(prayerTimes) {
-    setInterval(() => {
+    function runCheck() {
         let now = new Date();
         let currentDate = now.toLocaleDateString("de-DE"); // Format: "01.03.2025"
         let currentTime = now.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" });
@@ -44,7 +44,13 @@ function checkPrayerTimes(prayerTimes) {
                 }
             });
         }
-    }, 60000);
+    }
+    let secondsUntilNextMinute = 60 - now.getSeconds(); 
+
+    setTimeout(() => {
+        runCheck();
+        setInterval(runCheck, 60000); 
+    }, secondsUntilNextMinute * 1000);
 }
 
 
