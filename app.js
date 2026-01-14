@@ -3,6 +3,7 @@ if ('Notification' in window) {
         console.log("Benachrichtigungen:", permission);
     });
 }
+/+
 document.addEventListener("DOMContentLoaded", function () {
   fetch("gebetszeiten_2025.csv")
     .then(response => response.text())
@@ -97,37 +98,75 @@ function getTodayString() {
   const today = new Date();
   return `${today.getDate()}.${today.getMonth() + 1}.${today.getFullYear()}`;
 }
+*/
 
-
-
-/* 
-für alle Zeiten im jahr zu zeigen
 document.addEventListener("DOMContentLoaded", function () {
-    fetch("gebetszeiten_2025.csv") // CSV laden
+    fetch("gebetszeiten_2025.csv")
         .then(response => response.text())
         .then(csvText => {
             Papa.parse(csvText, {
                 header: true,
+                delimiter: ";",
                 skipEmptyLines: true,
                 complete: function (results) {
-                    const tableBody = document.querySelector("#prayer-table tbody");
-                    results.data.forEach(row => {
-                        let tr = document.createElement("tr");
-                        Object.values(row).forEach(value => {
-                            let td = document.createElement("td");
-                            td.textContent = value;
-                            tr.appendChild(td);
-                        });
-                        tableBody.appendChild(tr);
-                    });
+
+                    // 1️⃣ Für Heute (wie bisher)
+                    updateTodayTable(results.data);
                     checkPrayerTimes(results.data);
                     updateNextPrayer(results.data);
                     setInterval(() => updateNextPrayer(results.data), 1000);
+
+                    // 2️⃣ Für Morgen (neue Tabelle)
+                    updateTomorrowTable(results.data);
                 }
             });
         });
 });
-*/
+
+function updateTodayTable(prayerTimes) {
+    const tableBody = document.querySelector("#prayer-table tbody");
+    tableBody.innerHTML = "";
+
+    prayerTimes.forEach(row => {
+        const tr = document.createElement("tr");
+        Object.values(row).forEach(value => {
+            const td = document.createElement("td");
+            td.textContent = value;
+            tr.appendChild(td);
+        });
+        tableBody.appendChild(tr);
+    });
+}
+
+function updateTomorrowTable(prayerTimes) {
+    const tableBody = document.querySelector("#prayer-table-tomorrow tbody");
+    tableBody.innerHTML = "";
+
+    const tomorrow = getTomorrowString();
+    const tomorrowRow = prayerTimes.find(row => row.Datum === tomorrow);
+
+    if (!tomorrowRow) {
+        tableBody.innerHTML = `<tr><td colspan="7">Keine Gebetszeiten für morgen gefunden</td></tr>`;
+        return;
+    }
+    // Gebetszeiten
+    const tr = document.createElement("tr");
+    Object.values(tomorrowRow).forEach(value => {
+        const td = document.createElement("td");
+        td.textContent = value;
+        tr.appendChild(td);
+    });
+    tableBody.appendChild(tr);
+}
+
+function getTomorrowString() {
+    const today = new Date();
+    const tomorrow = new Date(today);
+    tomorrow.setDate(today.getDate() + 1);
+    return `${tomorrow.getDate()}.${tomorrow.getMonth() + 1}.${tomorrow.getFullYear()}`;
+}
+
+
 function checkPrayerTimes(prayerTimes) {
     setInterval(() => {
         let now = new Date();
