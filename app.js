@@ -110,60 +110,68 @@ document.addEventListener("DOMContentLoaded", function () {
                 skipEmptyLines: true,
                 complete: function (results) {
 
-                    // 1️⃣ Für Heute (wie bisher)
-                    updateTodayTable(results.data);
-                    checkPrayerTimes(results.data);
-                    updateNextPrayer(results.data);
-                    setInterval(() => updateNextPrayer(results.data), 1000);
+                    const prayerTimes = results.data; // alle Daten für Berechnung behalten
 
-                    // 2️⃣ Für Morgen (neue Tabelle)
-                    updateTomorrowTable(results.data);
+                    // 1️⃣ Heute
+                    updateDayTable(prayerTimes, "today");
+
+                    // 2️⃣ Morgen
+                    updateDayTable(prayerTimes, "tomorrow");
+
+                    // Funktionen für nächste Gebetszeiten
+                    checkPrayerTimes(prayerTimes);
+                    updateNextPrayer(prayerTimes);
+                    setInterval(() => updateNextPrayer(prayerTimes), 1000);
                 }
             });
         });
 });
 
-function updateTodayTable(prayerTimes) {
-    const tableBody = document.querySelector("#prayer-table tbody");
+// Funktion für Tagesanzeige
+function updateDayTable(prayerTimes, day) {
+    let tableBody, targetDate;
+
+    if (day === "today") {
+        tableBody = document.querySelector("#prayer-table tbody");
+        const today = new Date();
+        targetDate = `${today.getDate()}.${today.getMonth() + 1}.${today.getFullYear()}`;
+    } else if (day === "tomorrow") {
+        tableBody = document.querySelector("#prayer-table-tomorrow tbody");
+        const today = new Date();
+        const tomorrow = new Date(today);
+        tomorrow.setDate(today.getDate() + 1);
+        targetDate = `${tomorrow.getDate()}.${tomorrow.getMonth() + 1}.${tomorrow.getFullYear()}`;
+    }
+
+    const dayRow = prayerTimes.find(row => row.Datum === targetDate);
+
     tableBody.innerHTML = "";
 
-    prayerTimes.forEach(row => {
-        const tr = document.createElement("tr");
-        Object.values(row).forEach(value => {
-            const td = document.createElement("td");
-            td.textContent = value;
-            tr.appendChild(td);
-        });
-        tableBody.appendChild(tr);
-    });
-}
-
-function updateTomorrowTable(prayerTimes) {
-    const tableBody = document.querySelector("#prayer-table-tomorrow tbody");
-    tableBody.innerHTML = "";
-
-    const tomorrow = getTomorrowString();
-    const tomorrowRow = prayerTimes.find(row => row.Datum === tomorrow);
-
-    if (!tomorrowRow) {
-        tableBody.innerHTML = `<tr><td colspan="7">Keine Gebetszeiten für morgen gefunden</td></tr>`;
+    if (!dayRow) {
+        tableBody.innerHTML = `<tr><td colspan="7">Keine Gebetszeiten für ${day} gefunden</td></tr>`;
         return;
     }
-    // Gebetszeiten
+
+    // Optional: für Morgen eine Überschrift einfügen
+    if (day === "tomorrow") {
+        const headerRow = document.createElement("tr");
+        const headerCell = document.createElement("td");
+        headerCell.textContent = "Morgen";
+        headerCell.colSpan = 7;
+        headerCell.style.textAlign = "center";
+        headerCell.style.fontWeight = "bold";
+        headerRow.appendChild(headerCell);
+        tableBody.appendChild(headerRow);
+    }
+
+    // Gebetszeiten einfügen
     const tr = document.createElement("tr");
-    Object.values(tomorrowRow).forEach(value => {
+    Object.values(dayRow).forEach(value => {
         const td = document.createElement("td");
         td.textContent = value;
         tr.appendChild(td);
     });
     tableBody.appendChild(tr);
-}
-
-function getTomorrowString() {
-    const today = new Date();
-    const tomorrow = new Date(today);
-    tomorrow.setDate(today.getDate() + 1);
-    return `${tomorrow.getDate()}.${tomorrow.getMonth() + 1}.${tomorrow.getFullYear()}`;
 }
 
 
