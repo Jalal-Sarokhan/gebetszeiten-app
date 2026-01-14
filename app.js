@@ -57,28 +57,7 @@ function updateDayTable(prayerTimes, day) {
         return;
     }
 
-    // Optional: für Morgen eine Überschrift einfügen
-    if (day === "tomorrow") {
-        const headerRow = document.createElement("tr");
-        const headerCell = document.createElement("td");
-        headerCell.textContent = "الغد";
-        headerCell.colSpan = 7;
-        headerCell.style.textAlign = "center";
-        headerCell.style.fontWeight = "bold";
-        headerRow.appendChild(headerCell);
-        tableBody.appendChild(headerRow);
-    }
-     // Optional: für Heute eine Überschrift einfügen
-    if (day === "today") {
-        const headerRow = document.createElement("tr");
-        const headerCell = document.createElement("td");
-        headerCell.textContent = "اليوم";
-        headerCell.colSpan = 7;
-        headerCell.style.textAlign = "center";
-        headerCell.style.fontWeight = "bold";
-        headerRow.appendChild(headerCell);
-        tableBody.appendChild(headerRow);
-    }
+   
 
     // Gebetszeiten einfügen
     const tr = document.createElement("tr");
