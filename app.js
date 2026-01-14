@@ -3,6 +3,54 @@ if ('Notification' in window) {
         console.log("Benachrichtigungen:", permission);
     });
 }
+document.addEventListener("DOMContentLoaded", function () {
+  fetch("gebetszeiten_2025.csv")
+    .then(response => response.text())
+    .then(csvText => {
+
+      Papa.parse(csvText, {
+        header: true,
+        delimiter: ";",
+        skipEmptyLines: true,
+        complete: function (results) {
+
+          const tableBody = document.querySelector("#prayer-table-tomorrow tbody");
+          const tomorrow = getTomorrowString();
+
+          const tomorrowRow = results.data.find(row => row.Datum === tomorrow);
+
+          tableBody.innerHTML = "";
+
+          if (!tomorrowRow) {
+            tableBody.innerHTML =
+              `<tr><td colspan="7">Keine Gebetszeiten für morgen gefunden</td></tr>`;
+            return;
+          }
+
+          const tr = document.createElement("tr");
+          Object.values(tomorrowRow).forEach(value => {
+            const td = document.createElement("td");
+            td.textContent = value;
+            tr.appendChild(td);
+          });
+
+          tableBody.appendChild(tr);
+
+          checkPrayerTimes([tomorrowRow]);
+          updateNextPrayer([tomorrowRow]);
+          setInterval(() => updateNextPrayer([tomorrowRow]), 1000);
+        }
+      });
+    });
+});
+
+function getTomorrowString() {
+  const today = new Date();
+  const tomorrow = new Date(today);
+  tomorrow.setDate(today.getDate() + 1); // +1 Tag
+  return `${tomorrow.getDate()}.${tomorrow.getMonth() + 1}.${tomorrow.getFullYear()}`;
+}
+
 
 document.addEventListener("DOMContentLoaded", function () {
   fetch("gebetszeiten_2025.csv")
@@ -53,6 +101,7 @@ function getTodayString() {
 
 
 /* 
+für alle Zeiten im jahr zu zeigen
 document.addEventListener("DOMContentLoaded", function () {
     fetch("gebetszeiten_2025.csv") // CSV laden
         .then(response => response.text())
