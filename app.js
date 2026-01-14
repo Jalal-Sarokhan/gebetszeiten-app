@@ -3,102 +3,7 @@ if ('Notification' in window) {
         console.log("Benachrichtigungen:", permission);
     });
 }
-/*
-document.addEventListener("DOMContentLoaded", function () {
-  fetch("gebetszeiten_2025.csv")
-    .then(response => response.text())
-    .then(csvText => {
 
-      Papa.parse(csvText, {
-        header: true,
-        delimiter: ";",
-        skipEmptyLines: true,
-        complete: function (results) {
-
-          const tableBody = document.querySelector("#prayer-table-tomorrow tbody");
-          const tomorrow = getTomorrowString();
-
-          const tomorrowRow = results.data.find(row => row.Datum === tomorrow);
-
-          tableBody.innerHTML = "";
-
-          if (!tomorrowRow) {
-            tableBody.innerHTML =
-              `<tr><td colspan="7">Keine Gebetszeiten für morgen gefunden</td></tr>`;
-            return;
-          }
-
-          const tr = document.createElement("tr");
-          Object.values(tomorrowRow).forEach(value => {
-            const td = document.createElement("td");
-            td.textContent = value;
-            tr.appendChild(td);
-          });
-
-          tableBody.appendChild(tr);
-
-          checkPrayerTimes([tomorrowRow]);
-          updateNextPrayer([tomorrowRow]);
-          setInterval(() => updateNextPrayer([tomorrowRow]), 1000);
-        }
-      });
-    });
-});
-
-function getTomorrowString() {
-  const today = new Date();
-  const tomorrow = new Date(today);
-  tomorrow.setDate(today.getDate() + 1); // +1 Tag
-  return `${tomorrow.getDate()}.${tomorrow.getMonth() + 1}.${tomorrow.getFullYear()}`;
-}
-
-
-document.addEventListener("DOMContentLoaded", function () {
-  fetch("gebetszeiten_2025.csv")
-    .then(response => response.text())
-    .then(csvText => {
-
-      Papa.parse(csvText, {
-        header: true,
-        delimiter: ";",
-        skipEmptyLines: true,
-        complete: function (results) {
-
-          const tableBody = document.querySelector("#prayer-table tbody");
-          const today = getTodayString();
-
-          const todayRow = results.data.find(row => row.Datum === today);
-
-          tableBody.innerHTML = "";
-
-          if (!todayRow) {
-            tableBody.innerHTML =
-              `<tr><td colspan="7">Keine Gebetszeiten für heute gefunden</td></tr>`;
-            return;
-          }
-
-          const tr = document.createElement("tr");
-          Object.values(todayRow).forEach(value => {
-            const td = document.createElement("td");
-            td.textContent = value;
-            tr.appendChild(td);
-          });
-
-          tableBody.appendChild(tr);
-
-          checkPrayerTimes([todayRow]);
-          updateNextPrayer([todayRow]);
-          setInterval(() => updateNextPrayer([todayRow]), 1000);
-        }
-      });
-    });
-});
-
-function getTodayString() {
-  const today = new Date();
-  return `${today.getDate()}.${today.getMonth() + 1}.${today.getFullYear()}`;
-}
-*/
 
 document.addEventListener("DOMContentLoaded", function () {
     fetch("gebetszeiten_2025.csv")
@@ -156,7 +61,18 @@ function updateDayTable(prayerTimes, day) {
     if (day === "tomorrow") {
         const headerRow = document.createElement("tr");
         const headerCell = document.createElement("td");
-        headerCell.textContent = "Morgen";
+        headerCell.textContent = "الغد";
+        headerCell.colSpan = 7;
+        headerCell.style.textAlign = "center";
+        headerCell.style.fontWeight = "bold";
+        headerRow.appendChild(headerCell);
+        tableBody.appendChild(headerRow);
+    }
+     // Optional: für Heute eine Überschrift einfügen
+    if (day === "today") {
+        const headerRow = document.createElement("tr");
+        const headerCell = document.createElement("td");
+        headerCell.textContent = "اليوم";
         headerCell.colSpan = 7;
         headerCell.style.textAlign = "center";
         headerCell.style.fontWeight = "bold";
