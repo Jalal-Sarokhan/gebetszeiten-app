@@ -3,7 +3,7 @@ if ('Notification' in window) {
         console.log("Benachrichtigungen:", permission);
     });
 }
-/+
+/*
 document.addEventListener("DOMContentLoaded", function () {
   fetch("gebetszeiten_2025.csv")
     .then(response => response.text())
