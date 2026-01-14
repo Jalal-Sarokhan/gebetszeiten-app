@@ -5,6 +5,55 @@ if ('Notification' in window) {
 }
 
 document.addEventListener("DOMContentLoaded", function () {
+  fetch("gebetszeiten_2025.csv")
+    .then(response => response.text())
+    .then(csvText => {
+
+      Papa.parse(csvText, {
+        header: true,
+        delimiter: ";",
+        skipEmptyLines: true,
+        complete: function (results) {
+
+          const tableBody = document.querySelector("#prayer-table tbody");
+          const today = getTodayString();
+
+          const todayRow = results.data.find(row => row.Datum === today);
+
+          tableBody.innerHTML = "";
+
+          if (!todayRow) {
+            tableBody.innerHTML =
+              `<tr><td colspan="7">Keine Gebetszeiten für heute gefunden</td></tr>`;
+            return;
+          }
+
+          const tr = document.createElement("tr");
+          Object.values(todayRow).forEach(value => {
+            const td = document.createElement("td");
+            td.textContent = value;
+            tr.appendChild(td);
+          });
+
+          tableBody.appendChild(tr);
+
+          checkPrayerTimes([todayRow]);
+          updateNextPrayer([todayRow]);
+          setInterval(() => updateNextPrayer([todayRow]), 1000);
+        }
+      });
+    });
+});
+
+function getTodayString() {
+  const today = new Date();
+  return `${today.getDate()}.${today.getMonth() + 1}.${today.getFullYear()}`;
+}
+
+
+
+/* 
+document.addEventListener("DOMContentLoaded", function () {
     fetch("gebetszeiten_2025.csv") // CSV laden
         .then(response => response.text())
         .then(csvText => {
@@ -29,7 +78,7 @@ document.addEventListener("DOMContentLoaded", function () {
             });
         });
 });
-
+*/
 function checkPrayerTimes(prayerTimes) {
     setInterval(() => {
         let now = new Date();
