@@ -102,6 +102,10 @@ function updateTime() {
     let timeString = now.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
     document.getElementById("current-time").textContent = `Aktuelle Zeit: ${timeString}`;
 }
+function updateYear() { 
+    let year = new Date().getFullYear();
+    document.getElementById("current-year").textContent = `Gebetszeiten für: ${year}`;
+}
 setInterval(updateTime, 1000);
 updateTime(); 
 
@@ -155,7 +159,7 @@ function updateNextPrayer(prayerTimes) {
         let hours = Math.floor(diffMs / (1000 * 60 * 60));
         let minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
         let seconds = Math.floor((diffMs % (1000 * 60)) / 1000);
-        let year = new Date().getFullYear();
+       
 
         document.getElementById("nextPrayer").textContent = `Nächstes Gebet: ${nextPrayer} um ${nextPrayerTime}`;
         document.getElementById("remainingTime").textContent = `Verbleibende Zeit: ${hours}:${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
