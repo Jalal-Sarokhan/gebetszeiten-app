@@ -102,12 +102,13 @@ function updateTime() {
     let timeString = now.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
     document.getElementById("current-time").textContent = `Aktuelle Zeit: ${timeString}`;
 }
+setInterval(updateTime, 1000);
+updateTime(); 
 function updateYear() { 
     let year = new Date().getFullYear();
     document.getElementById("current-year").textContent = `Gebetszeiten für: ${year}`;
 }
-setInterval(updateTime, 1000);
-updateTime(); 
+updateYear(); 
 
 function updateNextPrayer(prayerTimes) {
     let now = new Date();
