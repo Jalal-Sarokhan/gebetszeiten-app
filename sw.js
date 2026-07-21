@@ -1,5 +1,5 @@
 /* Service Worker – App-Shell cache-first, Jahres-CSV network-first */
-const CACHE = "gebetszeiten-v4";
+const CACHE = "gebetszeiten-v5";
 const SHELL = [
     "./",
     "index.html",

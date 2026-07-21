@@ -20,6 +20,8 @@ const ICONS = {
 
 const SVG_SUN = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M19.1 4.9l-1.4 1.4M6.3 17.7l-1.4 1.4"/></svg>';
 const SVG_MOON = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A7 7 0 1 1 9.5 4a5.5 5.5 0 0 0 10.5 10.5Z"/></svg>';
+const SVG_EXPAND = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3M16 3h3a2 2 0 0 1 2 2v3M16 21h3a2 2 0 0 0 2-2v-3M8 21H5a2 2 0 0 1-2-2v-3"/></svg>';
+const SVG_COMPRESS = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3v3a2 2 0 0 1-2 2H3M16 3v3a2 2 0 0 0 2 2h3M16 21v-3a2 2 0 0 1 2-2h3M8 21v-3a2 2 0 0 0-2-2H3"/></svg>';
 
 const PRAYERS = [
     { key: "Fajr",    ar: "الفجر",  azan: true  },
@@ -390,6 +392,21 @@ function enableAudio() {
     }
 }
 
+/* ---------- Vollbild (TV/Kiosk) ---------- */
+function updateFsIcon() {
+    $("fsToggle").innerHTML = document.fullscreenElement ? SVG_COMPRESS : SVG_EXPAND;
+}
+
+function toggleFullscreen() {
+    if (!document.fullscreenElement) {
+        const el = document.documentElement;
+        const req = el.requestFullscreen || el.webkitRequestFullscreen;
+        if (req) { try { req.call(el); } catch (e) {} }
+    } else {
+        (document.exitFullscreen || document.webkitExitFullscreen || function () {}).call(document);
+    }
+}
+
 /* ---------- Jumua-Saison (Sommer-/Winterzeit) hervorheben ---------- */
 function markSeason() {
     const now = new Date();
@@ -422,6 +439,15 @@ function init() {
 
     $("enableAudio").addEventListener("click", enableAudio);
     $("retryBtn").addEventListener("click", loadTimes);
+
+    if (document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen) {
+        $("fsToggle").addEventListener("click", toggleFullscreen);
+        document.addEventListener("fullscreenchange", updateFsIcon);
+        document.addEventListener("webkitfullscreenchange", updateFsIcon);
+        updateFsIcon();
+    } else {
+        $("fsToggle").hidden = true;
+    }
 
     $("showAll").addEventListener("click", openAll);
     $("allModal").querySelectorAll("[data-close]").forEach((el) => el.addEventListener("click", closeAll));
