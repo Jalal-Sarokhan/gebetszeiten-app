@@ -2,41 +2,142 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gebetszeiten</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#1B5E20">
+    <meta name="description" content="Gebetszeiten der Othman-bin-Affan-Moschee in Ludwigshafen am Rhein – mit Live-Countdown zum nächsten Gebet und Azan-Benachrichtigung.">
+    <title>Gebetszeiten · Ludwigshafen</title>
+    <link rel="icon" href="icon.png">
+    <link rel="apple-touch-icon" href="icon.png">
+    <link rel="manifest" href="manifest.json">
     <link rel="stylesheet" href="styles.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
-
 </head>
 <body>
-    <h1>Gebetszeiten für Ramadan 2025</h1>
-    <p id="current-time"></p>
-    <p id="nextPrayer">Nächstes Gebet: -- um --:--</p>
-    <p id="remainingTime">Verbleibende Zeit: --:--:--</p>
-    <button align="center" style="margin-left: 45%" id="enableAudio" >Azan aktivieren</button>
-    <p id="prayer-notification" style="color: red; font-size: 20px;"></p>
-    <table id="prayer-table">
-        <thead>
-            <tr>
-                <th>Datum</th>
-                <th>Fajr</th>
-                <th>Shuruq</th>
-                <th>Zuhr</th>
-                <th>Asr</th>
-                <th>Maghrib</th>
-                <th>Isha</th>
-            </tr>
-        </thead>
-        <tbody></tbody>
-    </table>
+    <div class="app">
+        <!-- ─────────── Header ─────────── -->
+        <header class="topbar">
+            <div class="brand">
+                <span class="brand__mark" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" width="26" height="26" fill="currentColor">
+                        <path d="M12 2c-.4 2.3-2 3.7-3.6 5C6.4 8.8 5 10.7 5 13.5A7 7 0 0 0 19 13.5c0-2.8-1.4-4.7-3.4-6.5C14 5.7 12.4 4.3 12 2Z" opacity=".9"/>
+                    </svg>
+                </span>
+                <span class="brand__text">
+                    <strong class="brand__name" data-i18n="mosqueName">Othman-bin-Affan-Moschee</strong>
+                    <small class="brand__city" data-i18n="city">Ludwigshafen am Rhein</small>
+                </span>
+            </div>
+            <div class="topbar__actions">
+                <button class="chip" id="langToggle" type="button" aria-label="Sprache wechseln">
+                    <span id="langLabel">عربي</span>
+                </button>
+                <button class="chip chip--icon" id="themeToggle" type="button" aria-label="Design wechseln"></button>
+            </div>
+        </header>
 
+        <!-- ─────────── Hero ─────────── -->
+        <section class="hero" aria-live="polite">
+            <div class="hero__top">
+                <span class="hero__clock" id="currentTime">--:--:--</span>
+                <div class="hero__dates">
+                    <span id="gregorianDate" class="hero__date">—</span>
+                    <span id="hijriDate" class="hero__date hero__date--hijri">—</span>
+                </div>
+            </div>
+            <div class="hero__next">
+                <span class="hero__label" data-i18n="nextPrayer">Nächstes Gebet</span>
+                <div class="hero__nextrow">
+                    <span class="hero__nextname" id="nextPrayerName">—</span>
+                    <span class="hero__nexttime" id="nextPrayerTime">--:--</span>
+                </div>
+                <span class="hero__countlabel" data-i18n="remaining">verbleibende Zeit</span>
+                <span class="hero__countdown" id="countdown">--:--:--</span>
+                <div class="hero__progress" aria-hidden="true"><span id="progressFill"></span></div>
+            </div>
+        </section>
+
+        <!-- ─────────── Notification banner ─────────── -->
+        <div class="banner" id="prayerBanner" hidden></div>
+
+        <!-- ─────────── Prayer cards ─────────── -->
+        <section class="grid" id="prayerGrid" aria-label="Gebetszeiten heute">
+            <div class="state" id="loadingState">
+                <span class="spinner" aria-hidden="true"></span>
+                <span data-i18n="loading">Gebetszeiten werden geladen…</span>
+            </div>
+            <div class="state state--error" id="errorState" hidden>
+                <span data-i18n="loadError">Gebetszeiten konnten nicht geladen werden.</span>
+                <button class="btn btn--ghost" id="retryBtn" type="button" data-i18n="retry">Erneut versuchen</button>
+            </div>
+        </section>
+
+        <!-- ─────────── Azan control ─────────── -->
+        <section class="controls">
+            <div class="controls__row">
+                <button class="btn btn--primary" id="enableAudio" type="button">
+                    <span aria-hidden="true">🔊</span>
+                    <span data-i18n="enableAzan">Azan aktivieren</span>
+                </button>
+                <button class="btn btn--ghost" id="showAll" type="button">
+                    <span aria-hidden="true">
+                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.5" width="18" height="16" rx="2.5"/><path d="M3 9h18M8 2.5v4M16 2.5v4"/></svg>
+                    </span>
+                    <span data-i18n="allTimes">Alle Zeiten</span>
+                </button>
+            </div>
+            <p class="controls__hint" id="audioHint" data-i18n="audioHint">
+                Einmal aktivieren, damit der Azan bei geöffneter Seite ertönt.
+            </p>
+        </section>
+
+        <!-- ─────────── Jumua + Android-App ─────────── -->
+        <section class="extra">
+            <div class="jumua">
+                <div class="jumua__head">
+                    <span class="jumua__icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3c-2 2-5 3-5 6h10c0-3-3-4-5-6zM4 21V11c0-3 3-4 3-4M20 21V11c0-3-3-4-3-4M4 21h16M9 21v-4a3 3 0 0 1 6 0v4"/></svg>
+                    </span>
+                    <span class="jumua__name" data-i18n="jumua">Freitagsgebet (Jumua)</span>
+                </div>
+                <div class="jumua__times">
+                    <span class="jtime" id="jWinter"><b data-i18n="winter">Winterzeit</b><span>13:30</span></span>
+                    <span class="jtime" id="jSummer"><b data-i18n="summer">Sommerzeit</b><span>14:00</span></span>
+                </div>
+            </div>
+            <a class="btn btn--android" href="https://1drv.ms/u/c/b69ef63ef771e752/IQDJwcjlOR4nRJKFojQpwk1AAVvNNlQgq9kjiDFnGSoR3Gs?e=pggtmM" target="_blank" rel="noopener noreferrer">
+                <span aria-hidden="true">
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M6 9v7a1 1 0 0 0 1 1h1v3a1 1 0 0 0 2 0v-3h4v3a1 1 0 0 0 2 0v-3h1a1 1 0 0 0 1-1V9H6zM4.5 9A1.5 1.5 0 0 0 3 10.5v4a1.5 1.5 0 0 0 3 0v-4A1.5 1.5 0 0 0 4.5 9zm15 0A1.5 1.5 0 0 0 18 10.5v4a1.5 1.5 0 0 0 3 0v-4A1.5 1.5 0 0 0 19.5 9zM15.6 3.4l1-1.4a.3.3 0 1 0-.5-.35l-1.05 1.5A6.4 6.4 0 0 0 12 2.4c-1.1 0-2.1.25-3.05.75L7.9 1.65a.3.3 0 0 0-.5.35l1 1.4A5.6 5.6 0 0 0 6 8h12a5.6 5.6 0 0 0-2.4-4.6zM9.5 6.2a.75.75 0 1 1 0-1.5.75.75 0 0 1 0 1.5zm5 0a.75.75 0 1 1 0-1.5.75.75 0 0 1 0 1.5z"/></svg>
+                </span>
+                <span data-i18n="androidApp">Android-App herunterladen</span>
+            </a>
+        </section>
+
+        <footer class="foot">
+            <span data-i18n="dataSource">Zeiten: Othman-bin-Affan-Moschee, Ludwigshafen</span>
+            <span class="foot__status" id="dataStatus"></span>
+        </footer>
+    </div>
+
+    <!-- ─────────── Alle-Zeiten-Modal ─────────── -->
+    <div class="modal" id="allModal" hidden>
+        <div class="modal__backdrop" data-close></div>
+        <div class="modal__sheet" role="dialog" aria-modal="true" aria-labelledby="allTitle">
+            <header class="modal__head">
+                <h2 id="allTitle" class="modal__title" data-i18n="allTimesTitle">Alle Gebetszeiten</h2>
+                <button class="modal__close" id="allClose" type="button" aria-label="Schließen" data-close>
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+                </button>
+            </header>
+            <div class="modal__body" id="allBody"></div>
+        </div>
+    </div>
+
+    <audio id="azanAudio" src="azan.mp3" preload="none"></audio>
 
     <script src="app.js"></script>
     <script>
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('sw.js');
+        if ("serviceWorker" in navigator) {
+            window.addEventListener("load", () => navigator.serviceWorker.register("sw.js"));
         }
     </script>
-    
 </body>
 </html>
