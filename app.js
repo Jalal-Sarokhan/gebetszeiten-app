@@ -7,7 +7,7 @@
 /* ---------- Konstanten ---------- */
 const CSV_BASE = "https://raw.githubusercontent.com/Jalal-Sarokhan/csv/refs/heads/main/gebetszeiten_";
 const LOCAL_FALLBACK_CSV = "gebetszeiten_2025.csv";
-const LS = { theme: "gz-theme", lang: "gz-lang", csv: (y) => `gz-csv-${y}` };
+const LS = { theme: "gz-theme", lang: "gz-lang", muted: "gz-muted", csv: (y) => `gz-csv-${y}` };
 
 const ICONS = {
     Fajr:    '<path d="M3 18h18M12 3v3M5.6 8.6l2 2M18.4 8.6l-2 2M7 18a5 5 0 0 1 10 0"/>',
@@ -38,8 +38,8 @@ const T = {
         nextPrayer: "Nächstes Gebet", remaining: "verbleibende Zeit",
         loading: "Gebetszeiten werden geladen…",
         loadError: "Gebetszeiten konnten nicht geladen werden.", retry: "Erneut versuchen",
-        enableAzan: "Azan aktivieren", azanOn: "Azan aktiv",
-        audioHint: "Einmal aktivieren, damit der Azan bei geöffneter Seite ertönt.",
+        azanOn: "Azan an", azanMutedLabel: "Azan stumm",
+        audioHint: "Antippen, um den Azan stummzuschalten oder wieder einzuschalten.",
         dataSource: "Zeiten: Othman-bin-Affan-Moschee, Ludwigshafen",
         prayerTime: (p) => `Es ist Zeit für ${p}.`,
         de: { Fajr: "Morgengebet", Shuruq: "Sonnenaufgang", Zuhr: "Mittagsgebet", Asr: "Nachmittagsgebet", Maghrib: "Abendgebet", Isha: "Nachtgebet" },
@@ -54,8 +54,8 @@ const T = {
         nextPrayer: "الصلاة القادمة", remaining: "الوقت المتبقّي",
         loading: "جارٍ تحميل مواقيت الصلاة…",
         loadError: "تعذّر تحميل مواقيت الصلاة.", retry: "إعادة المحاولة",
-        enableAzan: "تفعيل الأذان", azanOn: "الأذان مُفعَّل",
-        audioHint: "فعّله مرة واحدة ليُسمَع الأذان عند فتح الصفحة.",
+        azanOn: "الأذان مُفعَّل", azanMutedLabel: "الأذان مكتوم",
+        audioHint: "اضغط لكتم الأذان أو تشغيله من جديد.",
         dataSource: "المواقيت: مسجد عثمان بن عفان، لودفيغسهافن",
         prayerTime: (p) => `حان وقت صلاة ${p}.`,
         de: { Fajr: "الفجر", Shuruq: "الشروق", Zuhr: "الظهر", Asr: "العصر", Maghrib: "المغرب", Isha: "العشاء" },
@@ -72,6 +72,8 @@ let times = {};                 // { "d.M.yyyy": {Fajr:"05:40", ...} }
 let lang = localStorage.getItem(LS.lang) || "de";
 let dataStatus = "";            // "live" | "cached" | "offline"
 let audioUnlocked = false;
+let azanMuted = localStorage.getItem(LS.muted) === "1";   // false = Ton an (Standard)
+let pseudoFs = false;           // CSS-Ersatz-Vollbild aktiv (TV ohne Fullscreen-API)
 const fired = new Set();        // "d.M.yyyy Fajr" -> Azan bereits gefeuert
 
 /* ---------- Hilfsfunktionen ---------- */
@@ -291,9 +293,11 @@ function firePrayer(p) {
     banner.hidden = false;
     setTimeout(() => { banner.hidden = true; }, 60000);
 
-    const audio = $("azanAudio");
-    audio.currentTime = 0;
-    audio.play().catch(() => {});
+    if (!azanMuted) {
+        const audio = $("azanAudio");
+        audio.currentTime = 0;
+        audio.play().catch(() => {});
+    }
 }
 
 /* ---------- Alle Zeiten (Ganzjahr) ---------- */
@@ -359,6 +363,7 @@ function applyLang() {
     });
     $("langLabel").textContent = t.langLabel;
     updateStatusLabel();
+    updateMuteButton();
     if (Object.keys(times).length) { renderCards(); tick(); }
     if (!$("allModal").hidden) renderAllTimes();
 }
@@ -376,34 +381,77 @@ function applyTheme(theme) {
     $("themeToggle").innerHTML = dark ? SVG_SUN : SVG_MOON;
 }
 
-/* ---------- Audio freischalten ---------- */
-function enableAudio() {
+/* ---------- Azan stumm/an schalten ---------- */
+function unlockAudio() {
+    // Click zählt als User-Geste: Autoplay-Freigabe sichern
+    if (audioUnlocked) return;
     const audio = $("azanAudio");
     audio.play().then(() => {
-        setTimeout(() => { audio.pause(); audio.currentTime = 0; }, 2500);
+        setTimeout(() => { audio.pause(); audio.currentTime = 0; }, 300);
         audioUnlocked = true;
-        const btn = $("enableAudio");
-        btn.classList.add("is-active");
-        btn.querySelector("[data-i18n]").textContent = T[lang].azanOn;
     }).catch(() => {});
-
     if ("Notification" in window && Notification.permission === "default") {
         Notification.requestPermission();
     }
 }
 
+function toggleMute() {
+    azanMuted = !azanMuted;
+    localStorage.setItem(LS.muted, azanMuted ? "1" : "0");
+    if (!azanMuted) unlockAudio();   // beim Einschalten Audio freischalten
+    updateMuteButton();
+}
+
+function updateMuteButton() {
+    const btn = $("enableAudio");
+    if (!btn) return;
+    const t = T[lang];
+    btn.classList.toggle("is-active", azanMuted);
+    btn.setAttribute("aria-pressed", String(azanMuted));
+    btn.innerHTML =
+        `<span aria-hidden="true">${azanMuted ? "🔇" : "🔊"}</span>` +
+        `<span>${azanMuted ? t.azanMutedLabel : t.azanOn}</span>`;
+}
+
 /* ---------- Vollbild (TV/Kiosk) ---------- */
+function isFsActive() {
+    return !!document.fullscreenElement || !!document.webkitFullscreenElement || pseudoFs;
+}
+
 function updateFsIcon() {
-    $("fsToggle").innerHTML = document.fullscreenElement ? SVG_COMPRESS : SVG_EXPAND;
+    $("fsToggle").innerHTML = isFsActive() ? SVG_COMPRESS : SVG_EXPAND;
+}
+
+function setPseudoFs(on) {
+    pseudoFs = on;
+    document.documentElement.classList.toggle("fs-active", on);
+    updateFsIcon();
 }
 
 function toggleFullscreen() {
-    if (!document.fullscreenElement) {
-        const el = document.documentElement;
-        const req = el.requestFullscreen || el.webkitRequestFullscreen;
-        if (req) { try { req.call(el); } catch (e) {} }
+    const el = document.documentElement;
+    const req = el.requestFullscreen || el.webkitRequestFullscreen;
+    const exit = document.exitFullscreen || document.webkitExitFullscreen;
+
+    // Bereits im CSS-Ersatz-Vollbild? -> beenden
+    if (pseudoFs) { setPseudoFs(false); return; }
+
+    // Natives Vollbild aktiv? -> beenden
+    if (document.fullscreenElement || document.webkitFullscreenElement) {
+        if (exit) { try { exit.call(document); } catch (e) {} }
+        return;
+    }
+
+    // Natives Vollbild versuchen, sonst CSS-Ersatz (TV-Browser ohne API)
+    if (req) {
+        try {
+            const p = req.call(el);
+            if (p && typeof p.then === "function") p.catch(() => setPseudoFs(true));
+        } catch (e) {
+            setPseudoFs(true);
+        }
     } else {
-        (document.exitFullscreen || document.webkitExitFullscreen || function () {}).call(document);
+        setPseudoFs(true);
     }
 }
 
@@ -437,17 +485,15 @@ function init() {
         applyLang();
     });
 
-    $("enableAudio").addEventListener("click", enableAudio);
+    $("enableAudio").addEventListener("click", toggleMute);
+    updateMuteButton();
     $("retryBtn").addEventListener("click", loadTimes);
 
-    if (document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen) {
-        $("fsToggle").addEventListener("click", toggleFullscreen);
-        document.addEventListener("fullscreenchange", updateFsIcon);
-        document.addEventListener("webkitfullscreenchange", updateFsIcon);
-        updateFsIcon();
-    } else {
-        $("fsToggle").hidden = true;
-    }
+    // Vollbild ist immer verfügbar: native API wo möglich, sonst CSS-Ersatz (TV)
+    $("fsToggle").addEventListener("click", toggleFullscreen);
+    document.addEventListener("fullscreenchange", updateFsIcon);
+    document.addEventListener("webkitfullscreenchange", updateFsIcon);
+    updateFsIcon();
 
     $("showAll").addEventListener("click", openAll);
     $("allModal").querySelectorAll("[data-close]").forEach((el) => el.addEventListener("click", closeAll));
