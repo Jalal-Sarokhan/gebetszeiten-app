@@ -173,6 +173,7 @@ function renderCards() {
             <span class="card__time">${today[p.key] || "--:--"}</span>`;
         grid.appendChild(card);
     }
+    scheduleFit(0);
 }
 
 /* ---------- Uhr / Datum / nächstes Gebet ---------- */
@@ -231,6 +232,9 @@ function tick() {
     }
 
     if (next) {
+        // Gebetswechsel verschiebt das card__badge -> Höhe ändert sich
+        if (next.prayer.key !== lastNextKey) { lastNextKey = next.prayer.key; scheduleFit(0); }
+
         const name = lang === "ar" ? next.prayer.ar : next.prayer.key;
         $("nextPrayerName").textContent = name;
         $("nextPrayerTime").textContent = next.time;
@@ -262,6 +266,7 @@ function tick() {
     }
 
     checkAzan(now);
+    if ((++fitTicks % 5) === 0) fitGuard();   // 1 Layout-Read alle 5 s, keine Writes
 }
 
 /* ---------- Azan-Auslösung ---------- */
@@ -291,7 +296,8 @@ function firePrayer(p) {
     const banner = $("prayerBanner");
     banner.textContent = msg;
     banner.hidden = false;
-    setTimeout(() => { banner.hidden = true; }, 60000);
+    scheduleFit(0);
+    setTimeout(() => { banner.hidden = true; scheduleFit(0); }, 60000);
 
     if (!azanMuted) {
         const audio = $("azanAudio");
@@ -366,6 +372,7 @@ function applyLang() {
     updateMuteButton();
     if (Object.keys(times).length) { renderCards(); tick(); }
     if (!$("allModal").hidden) renderAllTimes();
+    scheduleFit(0);   // DE<->AR ändert jede Labelbreite
 }
 
 function updateStatusLabel() {
@@ -426,6 +433,8 @@ function setPseudoFs(on) {
     pseudoFs = on;
     document.documentElement.classList.toggle("fs-active", on);
     updateFsIcon();
+    scheduleFit(0);
+    scheduleFit(350);   // nochmal, wenn der Viewport steht
 }
 
 function toggleFullscreen() {
@@ -453,6 +462,158 @@ function toggleFullscreen() {
     } else {
         setPseudoFs(true);
     }
+}
+
+/* ---------- Auto-Fit: alles ohne Scrollen (TV/Kiosk) ----------
+   Misst die natürliche Layout-Höhe der .app und passt sie per transform:scale
+   exakt in den Viewport ein. Nur im Vollbild und ab 1024px Breite aktiv. */
+const FIT = {
+    MIN: 0.45,     // stärker verkleinern wäre unlesbar
+    MAX: 2.5,      // 4K: bewusst hochskalieren (TV-Leseabstand)
+    SAFETY: 2,     // px Reserve gegen Rundungsfehler
+    PASSES: 4      // Obergrenze der Breiten-Iteration
+};
+
+let fitRaf = 0, fitTimer = 0;
+let fitting = false;      // Re-Entrance-Schutz für ResizeObserver
+let fitActive = false;
+let fitLastH = 0;         // zuletzt eingepasste Layout-Höhe (für fitGuard)
+let fitTicks = 0;
+let lastNextKey = null;
+
+function fitShouldBeActive() {
+    if (!window.matchMedia) return false;
+    // Handy/Portrait bleibt unangetastet
+    if (!matchMedia("(min-width: 1024px)").matches) return false;
+    if (!matchMedia("(min-height: 480px)").matches) return false;
+    if (isFsActive()) return true;
+    return matchMedia("(display-mode: fullscreen)").matches;
+}
+
+function clearFit(app) {
+    document.documentElement.classList.remove("fit-on");
+    app.classList.remove("is-fit");
+    app.style.width = "";
+    app.style.removeProperty("--fit-k");
+    app.style.removeProperty("--fit-x");
+    app.style.removeProperty("--fit-y");
+    fitLastH = 0;
+}
+
+function layoutHeight(el) {
+    // offset/scrollHeight sind LAYOUT-Werte -> von transform unbeeinflusst,
+    // deshalb kann ohne Zurücksetzen der Skalierung gemessen werden.
+    return Math.max(1, el.offsetHeight, el.scrollHeight);
+}
+
+function applyFit() {
+    const app = document.querySelector(".app");
+    if (!app) return;
+
+    if (!fitShouldBeActive()) {
+        if (fitActive) { fitActive = false; clearFit(app); }
+        return;
+    }
+
+    fitting = true;
+    fitActive = true;
+    document.documentElement.classList.add("fit-on");
+    app.classList.add("is-fit");
+
+    const cs   = getComputedStyle(document.body);
+    const padL = parseFloat(cs.paddingLeft)   || 0;
+    const padR = parseFloat(cs.paddingRight)  || 0;
+    const padT = parseFloat(cs.paddingTop)    || 0;
+    const padB = parseFloat(cs.paddingBottom) || 0;
+    const root = document.documentElement;
+    const availW = Math.max(320, root.clientWidth  - padL - padR - FIT.SAFETY);
+    const availH = Math.max(240, root.clientHeight - padT - padB - FIT.SAFETY);
+
+    // (1) Breiten-Iteration: breiter => weniger Umbrüche => flacher => k größer.
+    //     Monoton und in <= FIT.PASSES Schritten stabil.
+    app.style.width = "";           // natürliche Breite (CSS max-width) als Start
+    let w = 0, k = 1;
+    for (let i = 0; i < FIT.PASSES; i++) {
+        k = Math.min(FIT.MAX, Math.max(FIT.MIN, availH / layoutHeight(app)));
+        const nextW = Math.round(availW / k);
+        if (nextW === w) break;
+        w = nextW;
+        app.style.width = w + "px";
+    }
+
+    // (2) Sicherheits-Pass gegen die ENDGÜLTIGE Layout-Höhe/-Breite.
+    //     Diese Zeilen sind die eigentliche Garantie, unabhängig von (1).
+    const h = layoutHeight(app);
+    k = Math.min(FIT.MAX, Math.max(FIT.MIN, availH / h));
+    if (w > 0) k = Math.min(k, availW / w);
+
+    // (3) Positionieren. Die Layout-Position der .app ist NICHT vorhersehbar:
+    //     in RTL (Arabisch) setzt der Browser den Block rechtsbündig. Deshalb
+    //     Translate auf 0 setzen, echte Position messen und die Differenz zum
+    //     Zielpunkt verschieben. Bei transform-origin:top left bleibt die
+    //     linke obere Ecke beim Skalieren stehen -> rect.left/top == Layout-Position.
+    app.style.setProperty("--fit-k", k.toFixed(4));
+    app.style.setProperty("--fit-x", "0px");
+    app.style.setProperty("--fit-y", "0px");
+    const at = app.getBoundingClientRect();
+
+    const targetX = padL + Math.max(0, (availW - w * k) / 2);   // horizontal zentriert
+    const targetY = padT + Math.max(0, (availH - h * k) / 2);   // vertikal zentriert (4K)
+
+    app.style.setProperty("--fit-x", (targetX - at.left).toFixed(1) + "px");
+    app.style.setProperty("--fit-y", (targetY - at.top).toFixed(1) + "px");
+    fitLastH = h;
+
+    // ResizeObserver feuert am Ende DIESES Frames wegen unserer Breitenänderung
+    // -> Flag erst im nächsten Frame lösen, dadurch keine Endlosschleife.
+    requestAnimationFrame(() => { fitting = false; });
+}
+
+function scheduleFit(delay) {
+    if (delay) {
+        clearTimeout(fitTimer);
+        fitTimer = setTimeout(() => scheduleFit(0), delay);
+        return;
+    }
+    if (fitRaf) return;                       // mehrfach pro Frame -> ein Lauf
+    fitRaf = requestAnimationFrame(() => { fitRaf = 0; applyFit(); });
+}
+
+/* Billiger Wächter: nur EIN Layout-Read, kein Write. Fängt alles ab,
+   was Observer/Hooks verpasst haben könnten. */
+function fitGuard() {
+    if (!fitActive || fitting || fitRaf) return;
+    const app = document.querySelector(".app");
+    if (!app) return;
+    if (Math.abs(layoutHeight(app) - fitLastH) > 1) scheduleFit(0);
+}
+
+function onFsChange() {
+    updateFsIcon();
+    scheduleFit(0);      // sofort
+    scheduleFit(350);    // nochmal, wenn der Viewport nach dem FS-Wechsel steht
+}
+
+function initFit() {
+    const app = document.querySelector(".app");
+    if (!app) return;
+
+    window.addEventListener("resize", () => scheduleFit(120));
+    window.addEventListener("orientationchange", () => scheduleFit(250));
+
+    if ("ResizeObserver" in window) {
+        // Fängt jede inhaltsbedingte Höhenänderung ab: Banner, Badge,
+        // Sprachwechsel, Daten-Nachladen, Schriftmetriken.
+        new ResizeObserver(() => { if (!fitting) scheduleFit(0); }).observe(app);
+    }
+    if (document.fonts && document.fonts.ready) {
+        document.fonts.ready.then(() => scheduleFit(0)).catch(() => {});
+    }
+    const mq = matchMedia("(min-width: 1024px)");
+    if (mq.addEventListener) mq.addEventListener("change", () => scheduleFit(0));
+    else if (mq.addListener) mq.addListener(() => scheduleFit(0));
+
+    scheduleFit(0);
 }
 
 /* ---------- Jumua-Saison (Sommer-/Winterzeit) hervorheben ---------- */
@@ -491,8 +652,8 @@ function init() {
 
     // Vollbild ist immer verfügbar: native API wo möglich, sonst CSS-Ersatz (TV)
     $("fsToggle").addEventListener("click", toggleFullscreen);
-    document.addEventListener("fullscreenchange", updateFsIcon);
-    document.addEventListener("webkitfullscreenchange", updateFsIcon);
+    document.addEventListener("fullscreenchange", onFsChange);
+    document.addEventListener("webkitfullscreenchange", onFsChange);
     updateFsIcon();
 
     $("showAll").addEventListener("click", openAll);
@@ -502,6 +663,7 @@ function init() {
     loadTimes();
     setInterval(tick, 1000);
     updateStatusLabel();
+    initFit();
 }
 
 document.addEventListener("DOMContentLoaded", init);
